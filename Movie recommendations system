@@ -1,0 +1,37 @@
+import pandas as pd
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+
+# Load dataset
+df = pd.read_csv("movies.csv")
+
+# Fill missing values
+df['genres'] = df['genres'].fillna('')
+
+# Convert genres to string
+df['genres'] = df['genres'].str.replace('|', ' ')
+
+# Vectorize genres
+vectorizer = CountVectorizer()
+genre_matrix = vectorizer.fit_transform(df['genres'])
+
+# Compute similarity matrix
+cosine_sim = cosine_similarity(genre_matrix, genre_matrix)
+
+# Create a function to recommend movies
+def recommend(movie_title, top_n=5):
+    if movie_title not in df['title'].values:
+        return "Movie not found."
+
+    idx = df[df['title'] == movie_title].index[0]
+    sim_scores = list(enumerate(cosine_sim[idx]))
+    sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)
+    sim_scores = sim_scores[1:top_n+1]  # exclude the input movie
+
+    recommended = [df.iloc[i[0]]['title'] for i in sim_scores]
+    return recommended
+
+# Test the recommender
+movie = "The Matrix"
+print(f"Movies similar to '{movie}':")
+print(recommend(movie))
